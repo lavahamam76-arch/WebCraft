@@ -102,28 +102,28 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
   };
 
   return (
-    <div className="relative w-full h-screen mc-dirt-bg flex flex-col justify-between select-none overflow-hidden">
+    <div className="relative w-full h-screen h-[100dvh] mc-dirt-bg flex flex-col justify-between select-none overflow-hidden">
       {/* Top Header Bar */}
-      <div className="w-full bg-black/60 border-b-2 border-black/80 px-6 py-3 flex items-center justify-between z-10 shadow-md">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-gray-200 mc-text-shadow">
+      <div className="w-full bg-black/70 border-b-2 border-black/80 px-3 py-1.5 sm:px-6 sm:py-2.5 flex items-center justify-between z-10 shadow-md">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-xs sm:text-sm font-bold text-gray-200 mc-text-shadow">
             Play Multiplayer
           </span>
-          <span className="text-[11px] text-green-400 mc-text-shadow">
+          <span className="text-[10px] sm:text-[11px] text-green-400 mc-text-shadow hidden xs:inline">
             (Vanilla 1.21.4 Protocol 768)
           </span>
         </div>
 
         {/* Player Profile indicator */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-300 mc-text-shadow">Player:</span>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-[10px] sm:text-[11px] text-gray-300 mc-text-shadow">Player:</span>
           <button
             id="mc-mp-player-btn"
             onClick={() => {
               soundManager.playClick();
               onOpenProfile();
             }}
-            className="mc-btn text-[11px] py-1 px-2.5 text-yellow-300"
+            className="mc-btn text-[10px] sm:text-[11px] py-0.5 px-2 sm:px-2.5 text-yellow-300"
           >
             {username}
           </button>
@@ -131,9 +131,9 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
       </div>
 
       {/* Center: Server List Container */}
-      <div className="flex-1 w-full max-w-4xl mx-auto overflow-y-auto p-4 flex flex-col gap-2 my-2">
+      <div className="flex-1 min-h-0 w-full max-w-4xl mx-auto overflow-y-auto px-2 sm:px-4 py-1.5 flex flex-col gap-1.5 sm:gap-2 my-1">
         {servers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400 text-xs mc-text-shadow">
+          <div className="flex flex-col items-center justify-center h-36 sm:h-48 text-gray-400 text-xs mc-text-shadow">
             <p>No servers found.</p>
             <p className="mt-1 text-gray-500">Click &quot;Add Server&quot; to add a Minecraft server.</p>
           </div>
@@ -165,14 +165,14 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
                   soundManager.playClick();
                 }}
                 onDoubleClick={() => onJoinServer(server)}
-                className={`relative flex items-center gap-3 p-2 bg-black/60 border-2 transition-none cursor-pointer ${
+                className={`relative flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-black/60 border-2 transition-none cursor-pointer ${
                   isSelected
                     ? 'border-white bg-black/80 ring-1 ring-white'
                     : 'border-black hover:border-gray-500'
                 }`}
               >
-                {/* Server Favicon 64x64 */}
-                <div className="relative w-16 h-16 bg-black/80 border border-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {/* Server Favicon */}
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-black/80 border border-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
                   <img
                     src={iconSrc}
                     alt={server.name}
@@ -181,40 +181,40 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
                   />
                   {isSelected && (
                     <div className="absolute inset-0 bg-white/10 flex items-center justify-center opacity-0 hover:opacity-100">
-                      <ArrowRight size={24} className="text-white drop-shadow" />
+                      <ArrowRight size={20} className="text-white drop-shadow" />
                     </div>
                   )}
                 </div>
 
                 {/* Server Info Details */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between h-16 py-0.5">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-bold text-white mc-text-shadow truncate">
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                  <div className="flex justify-between items-baseline gap-1">
+                    <span className="text-[11px] sm:text-xs font-bold text-white mc-text-shadow truncate">
                       {server.name}
                     </span>
 
                     {/* Ping Latency & Player Count */}
-                    <div className="flex items-center gap-3 text-[11px] mc-text-shadow">
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px] mc-text-shadow flex-shrink-0">
                       {loading ? (
-                        <span className="text-gray-400 flex items-center gap-1 text-[10px]">
-                          <RefreshCw size={10} className="animate-spin" /> Pinging...
+                        <span className="text-gray-400 flex items-center gap-1 text-[9px] sm:text-[10px]">
+                          <RefreshCw size={9} className="animate-spin" /> Pinging...
                         </span>
                       ) : ping?.online ? (
                         <>
-                          <span className="text-gray-300">
+                          <span className="text-gray-300 text-[10px] sm:text-xs">
                             {ping.players ? `${ping.players.online}/${ping.players.max}` : '1/100'}
                           </span>
                           <span
                             title={`${ping.latency || 25} ms`}
                             className="flex items-center gap-0.5 text-green-400 font-bold"
                           >
-                            <Signal size={12} className="text-green-400" />
-                            <span className="text-[10px]">{ping.latency || 25}ms</span>
+                            <Signal size={11} className="text-green-400" />
+                            <span className="text-[9px] sm:text-[10px]">{ping.latency || 25}ms</span>
                           </span>
                         </>
                       ) : (
-                        <span className="flex items-center gap-1 text-red-500 font-bold text-[10px]">
-                          <WifiOff size={12} />
+                        <span className="flex items-center gap-1 text-red-500 font-bold text-[9px] sm:text-[10px]">
+                          <WifiOff size={11} />
                           <span>Offline</span>
                         </span>
                       )}
@@ -222,12 +222,12 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
                   </div>
 
                   {/* MOTD Description Lines */}
-                  <div className="text-[11px] leading-tight break-words line-clamp-2 select-text font-normal">
+                  <div className="text-[10px] sm:text-[11px] leading-tight break-words line-clamp-1 sm:line-clamp-2 select-text font-normal">
                     {renderMOTD(motdSpans)}
                   </div>
 
                   {/* Server Address info */}
-                  <div className="text-[9px] text-gray-400 truncate">
+                  <div className="text-[8px] sm:text-[9px] text-gray-400 truncate">
                     {server.address} {server.isLocalRoom && '• Built-in Vanilla 1.21.4 Relay'}
                   </div>
                 </div>
@@ -238,14 +238,14 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
       </div>
 
       {/* Bottom Button Action Bar */}
-      <div className="w-full bg-black/60 border-t-2 border-black/80 px-4 py-3 flex flex-col items-center gap-2.5 z-10 shadow-lg">
+      <div className="w-full bg-black/70 border-t-2 border-black/80 px-2 py-1.5 sm:px-4 sm:py-2.5 flex flex-col items-center gap-1.5 z-10 shadow-lg">
         {/* Row 1 */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 w-full max-w-3xl">
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2.5 w-full max-w-3xl">
           <button
             id="mc-btn-join-server"
             disabled={!selectedServer}
             onClick={handleJoin}
-            className="mc-btn flex-1 min-w-[140px] py-2 text-xs text-yellow-200"
+            className="mc-btn flex-1 min-w-[100px] sm:min-w-[130px] py-1 sm:py-1.5 text-[10px] sm:text-xs text-yellow-200"
           >
             Join Server
           </button>
@@ -256,7 +256,7 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
               soundManager.playClick();
               onDirectConnect();
             }}
-            className="mc-btn flex-1 min-w-[140px] py-2 text-xs"
+            className="mc-btn flex-1 min-w-[100px] sm:min-w-[130px] py-1 sm:py-1.5 text-[10px] sm:text-xs"
           >
             Direct Connection
           </button>
@@ -267,15 +267,15 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
               soundManager.playClick();
               onAddServer();
             }}
-            className="mc-btn flex-1 min-w-[140px] py-2 text-xs flex items-center justify-center gap-1"
+            className="mc-btn flex-1 min-w-[100px] sm:min-w-[130px] py-1 sm:py-1.5 text-[10px] sm:text-xs flex items-center justify-center gap-1"
           >
-            <Plus size={14} />
+            <Plus size={12} />
             <span>Add Server</span>
           </button>
         </div>
 
         {/* Row 2 */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 w-full max-w-3xl">
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2.5 w-full max-w-3xl">
           <button
             id="mc-btn-edit-server"
             disabled={!selectedServer}
@@ -285,9 +285,9 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
                 onEditServer(selectedServer);
               }
             }}
-            className="mc-btn flex-1 min-w-[110px] py-2 text-xs flex items-center justify-center gap-1"
+            className="mc-btn flex-1 min-w-[75px] sm:min-w-[100px] py-1 sm:py-1.5 text-[10px] sm:text-xs flex items-center justify-center gap-1"
           >
-            <Edit2 size={13} />
+            <Edit2 size={11} />
             <span>Edit</span>
           </button>
 
@@ -300,18 +300,18 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
                 onDeleteServer(selectedServer);
               }
             }}
-            className="mc-btn flex-1 min-w-[110px] py-2 text-xs flex items-center justify-center gap-1"
+            className="mc-btn flex-1 min-w-[75px] sm:min-w-[100px] py-1 sm:py-1.5 text-[10px] sm:text-xs flex items-center justify-center gap-1"
           >
-            <Trash2 size={13} />
+            <Trash2 size={11} />
             <span>Delete</span>
           </button>
 
           <button
             id="mc-btn-refresh-servers"
             onClick={refreshAll}
-            className="mc-btn flex-1 min-w-[110px] py-2 text-xs flex items-center justify-center gap-1"
+            className="mc-btn flex-1 min-w-[75px] sm:min-w-[100px] py-1 sm:py-1.5 text-[10px] sm:text-xs flex items-center justify-center gap-1"
           >
-            <RefreshCw size={13} />
+            <RefreshCw size={11} />
             <span>Refresh</span>
           </button>
 
@@ -321,7 +321,7 @@ export const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({
               soundManager.playClick();
               onBack();
             }}
-            className="mc-btn flex-1 min-w-[110px] py-2 text-xs"
+            className="mc-btn flex-1 min-w-[75px] sm:min-w-[100px] py-1 sm:py-1.5 text-[10px] sm:text-xs"
           >
             Cancel
           </button>

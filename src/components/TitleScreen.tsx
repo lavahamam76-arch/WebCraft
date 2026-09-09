@@ -44,11 +44,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full h-screen mc-dirt-bg flex flex-col items-center justify-between p-6 select-none overflow-hidden">
+    <div className="relative w-full h-screen h-[100dvh] mc-dirt-bg flex flex-col items-center justify-between p-2 sm:p-4 md:p-6 select-none overflow-y-auto overflow-x-hidden">
       {/* Top Bar / Profile */}
-      <div className="w-full max-w-4xl flex justify-between items-center z-10">
+      <div className="w-full max-w-4xl flex justify-between items-center z-10 py-1">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-yellow-300 mc-text-shadow">Java Edition 1.21.4</span>
+          <span className="text-[10px] sm:text-xs text-yellow-300 mc-text-shadow">Java Edition 1.21.4</span>
         </div>
         <button
           id="mc-player-profile-btn"
@@ -58,44 +58,44 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             setTempSkin(skin);
             setShowProfileModal(true);
           }}
-          className="mc-btn flex items-center gap-2 text-xs py-1.5 px-3"
+          className="mc-btn flex items-center gap-1.5 text-[10px] sm:text-xs py-1 px-2 sm:px-3"
         >
-          <User size={14} />
+          <User size={13} />
           <span>{username}</span>
           <span className="text-gray-300">({skin === 'steve' ? 'Steve' : 'Alex'})</span>
         </button>
       </div>
 
       {/* Center Logo & Splash */}
-      <div className="relative flex flex-col items-center my-auto">
+      <div className="relative flex flex-col items-center my-auto py-1 sm:py-3">
         <div className="relative flex flex-col items-center">
           {/* Authentic Minecraft Java Logo */}
           <div className="text-center tracking-widest leading-none">
-            <div className="text-4xl sm:text-6xl md:text-7xl font-bold text-gray-200 tracking-wider mc-text-shadow border-b-4 border-gray-700 pb-2">
+            <div className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-200 tracking-wider mc-text-shadow border-b-2 sm:border-b-4 border-gray-700 pb-1 sm:pb-2">
               <span className="text-gray-400">MINE</span>
               <span className="text-gray-200">CRAFT</span>
             </div>
-            <div className="text-xs sm:text-sm tracking-widest text-gray-400 font-bold uppercase mt-1 mc-text-shadow">
+            <div className="text-[10px] sm:text-xs md:text-sm tracking-widest text-gray-400 font-bold uppercase mt-1 mc-text-shadow">
               JAVA EDITION - 1.21.4
             </div>
           </div>
 
           {/* Yellow Bouncing Splash Text */}
-          <div className="absolute -bottom-6 -right-6 sm:-right-12 z-20 pointer-events-none">
-            <span className="mc-splash whitespace-nowrap text-xs sm:text-sm md:text-base">
+          <div className="absolute -bottom-5 -right-4 sm:-right-8 md:-right-12 z-20 pointer-events-none">
+            <span className="mc-splash whitespace-nowrap text-[10px] sm:text-xs md:text-sm">
               {splashText}
             </span>
           </div>
         </div>
 
         {/* Java Main Menu Buttons */}
-        <div className="mt-12 flex flex-col gap-3 w-72 sm:w-96">
+        <div className="mt-4 sm:mt-6 md:mt-8 flex flex-col gap-1.5 sm:gap-2.5 w-64 sm:w-80 md:w-96">
           {/* Singleplayer (Disabled with Tooltip) */}
           <div className="relative group w-full">
             <button
               id="mc-btn-singleplayer"
               disabled
-              className="mc-btn w-full py-2.5 text-sm cursor-not-allowed opacity-60"
+              className="mc-btn w-full py-1.5 sm:py-2 text-[11px] sm:text-xs cursor-not-allowed opacity-60"
             >
               Singleplayer
             </button>
@@ -109,7 +109,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <button
             id="mc-btn-multiplayer"
             onClick={() => handleClick(onOpenMultiplayer)}
-            className="mc-btn w-full py-2.5 text-sm text-yellow-200"
+            className="mc-btn w-full py-1.5 sm:py-2 text-[11px] sm:text-xs text-yellow-200"
           >
             Multiplayer
           </button>
@@ -118,17 +118,17 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <button
             id="mc-btn-realms"
             disabled
-            className="mc-btn w-full py-2 text-xs opacity-60 cursor-not-allowed"
+            className="mc-btn w-full py-1.5 sm:py-2 text-[10px] sm:text-xs opacity-60 cursor-not-allowed"
           >
             Minecraft Realms
           </button>
 
           {/* Options & Quit Game */}
-          <div className="flex gap-3 w-full mt-2">
+          <div className="flex gap-2 sm:gap-3 w-full mt-1">
             <button
               id="mc-btn-options"
               onClick={() => handleClick(onOptions)}
-              className="mc-btn flex-1 py-2 text-xs"
+              className="mc-btn flex-1 py-1.5 sm:py-2 text-[10px] sm:text-xs"
             >
               Options...
             </button>
@@ -138,7 +138,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundManager.playClick();
                 window.location.reload();
               }}
-              className="mc-btn flex-1 py-2 text-xs"
+              className="mc-btn flex-1 py-1.5 sm:py-2 text-[10px] sm:text-xs"
             >
               Quit Game
             </button>
@@ -147,10 +147,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </div>
 
       {/* Bottom Footer Info */}
-      <div className="w-full max-w-5xl flex justify-between items-end text-[11px] text-gray-300 mc-text-shadow z-10">
+      <div className="w-full max-w-5xl flex justify-between items-end text-[9px] sm:text-[10px] text-gray-300 mc-text-shadow z-10 py-1">
         <div>
           <div>Minecraft 1.21.4 (Vanilla / Web Edition)</div>
-          <div className="text-[9px] text-gray-400">Protocol 768 / Full-Stack WebSocket Proxy</div>
+          <div className="text-[8px] sm:text-[9px] text-gray-400">Protocol 768 / Full-Stack WebSocket Proxy</div>
         </div>
         <div className="text-right">
           <div>Copyright Mojang AB. Do not distribute!</div>
@@ -159,13 +159,13 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {/* Player Profile & Skin Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-          <div className="mc-stone-bg border-4 border-gray-600 p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
-            <h2 className="text-center text-base text-yellow-300 mc-text-shadow">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 overflow-y-auto">
+          <div className="mc-stone-bg border-4 border-gray-600 p-4 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-3 sm:gap-4 my-auto">
+            <h2 className="text-center text-sm sm:text-base text-yellow-300 mc-text-shadow">
               Edit Player Profile
             </h2>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-300 mc-text-shadow">Player Username</label>
               <input
                 id="mc-player-name-input"
@@ -178,27 +178,27 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-300 mc-text-shadow">Default Skin Model</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setTempSkin('steve')}
-                  className={`mc-btn py-2 text-xs ${tempSkin === 'steve' ? 'border-yellow-400 text-yellow-300' : ''}`}
+                  className={`mc-btn py-1.5 sm:py-2 text-xs ${tempSkin === 'steve' ? 'border-yellow-400 text-yellow-300' : ''}`}
                 >
                   Classic (Steve)
                 </button>
                 <button
                   type="button"
                   onClick={() => setTempSkin('alex')}
-                  className={`mc-btn py-2 text-xs ${tempSkin === 'alex' ? 'border-yellow-400 text-yellow-300' : ''}`}
+                  className={`mc-btn py-1.5 sm:py-2 text-xs ${tempSkin === 'alex' ? 'border-yellow-400 text-yellow-300' : ''}`}
                 >
                   Slim (Alex)
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-4">
               <button
                 id="mc-save-profile-btn"
                 onClick={() => {
@@ -207,7 +207,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                   onChangeUsername(finalName, tempSkin);
                   setShowProfileModal(false);
                 }}
-                className="mc-btn flex-1 py-2 text-xs text-yellow-300"
+                className="mc-btn flex-1 py-1.5 sm:py-2 text-xs text-yellow-300"
               >
                 Save
               </button>
@@ -216,7 +216,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                   soundManager.playClick();
                   setShowProfileModal(false);
                 }}
-                className="mc-btn flex-1 py-2 text-xs"
+                className="mc-btn flex-1 py-1.5 sm:py-2 text-xs"
               >
                 Cancel
               </button>

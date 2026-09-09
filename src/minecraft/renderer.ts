@@ -33,6 +33,8 @@ export class MinecraftRenderer {
   // Mobs & Remote Players
   private mobGroups: Map<string, THREE.Group> = new Map();
   private playerGroups: Map<string, THREE.Group> = new Map();
+  private hologramGroups: Map<string, THREE.Sprite> = new Map();
+  private genericEntityGroups: Map<string, THREE.Group> = new Map();
 
   constructor(container: HTMLElement, fov = 70) {
     this.container = container;
@@ -488,6 +490,84 @@ export class MinecraftRenderer {
     return grp;
   }
 
+  // Render 3D Floating Text Holograms (Armor Stands / Text Displays from plugins and servers)
+  public updateHolograms(holograms: Array<{ id: string; text: string; x: number; y: number; z: number }>) {
+    const existingIds = new Set(holograms.map((h) => h.id));
+
+    // Remove obsolete holograms
+    for (const [id, sprite] of this.hologramGroups.entries()) {
+      if (!existingIds.has(id)) {
+        this.scene.remove(sprite);
+        this.hologramGroups.delete(id);
+      }
+    }
+
+    for (const h of holograms) {
+      let sprite = this.hologramGroups.get(h.id);
+      if (!sprite) {
+        sprite = this.createNametagSprite(h.text);
+        sprite.scale.set(2.2, 0.45, 1);
+        this.scene.add(sprite);
+        this.hologramGroups.set(h.id, sprite);
+      }
+      sprite.position.set(h.x, h.y, h.z);
+    }
+  }
+
+  // Render generic Minecraft entities (Mobs, Items, Projectiles, Armor Stands)
+  public updateEntities(entities: Array<{ id: string; type: string; x: number; y: number; z: number; yaw: number; pitch: number; name?: string }>) {
+    const existingIds = new Set(entities.map((e) => e.id));
+
+    // Remove despawned entities
+    for (const [id, grp] of this.genericEntityGroups.entries()) {
+      if (!existingIds.has(id)) {
+        this.scene.remove(grp);
+        this.genericEntityGroups.delete(id);
+      }
+    }
+
+    for (const ent of entities) {
+      let grp = this.genericEntityGroups.get(ent.id);
+      if (!grp) {
+        grp = this.createGenericEntityModel(ent.type, ent.name);
+        this.scene.add(grp);
+        this.genericEntityGroups.set(ent.id, grp);
+      }
+      grp.position.lerp(new THREE.Vector3(ent.x, ent.y, ent.z), 0.35);
+      grp.rotation.y = ent.yaw || 0;
+    }
+  }
+
+  private createGenericEntityModel(type: string, name?: string): THREE.Group {
+    const grp = new THREE.Group();
+    let col = 0x888888;
+    const t = type.toLowerCase();
+    if (t.includes('zombie')) col = 0x2e6b3e;
+    else if (t.includes('skeleton')) col = 0xcccccc;
+    else if (t.includes('creeper')) col = 0x22aa33;
+    else if (t.includes('pig')) col = 0xf0a0a0;
+    else if (t.includes('cow')) col = 0x5a3e28;
+    else if (t.includes('sheep')) col = 0xeeeeee;
+    else if (t.includes('item')) col = 0xffcc00;
+    else if (t.includes('armor_stand')) col = 0xa08060;
+    else if (t.includes('player')) col = 0x2e6b7d;
+
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 1.2, 0.6),
+      new THREE.MeshLambertMaterial({ color: col })
+    );
+    box.position.set(0, 0.6, 0);
+    grp.add(box);
+
+    if (name) {
+      const tag = this.createNametagSprite(name);
+      tag.position.set(0, 1.45, 0);
+      grp.add(tag);
+    }
+
+    return grp;
+  }
+
   // Animation Loop (Update hand swinging, bobbing, render frame)
   public render(delta: number, isMoving = false) {
     // Hand swing animation
@@ -522,6 +602,14 @@ export class MinecraftRenderer {
 
   public dispose() {
     window.removeEventListener('resize', this.onResize);
+    for (const sprite of this.hologramGroups.values()) {
+      this.scene.remove(sprite);
+    }
+    this.hologramGroups.clear();
+    for (const grp of this.genericEntityGroups.values()) {
+      this.scene.remove(grp);
+    }
+    this.genericEntityGroups.clear();
     this.renderer.dispose();
     if (this.container && this.renderer.domElement) {
       this.container.removeChild(this.renderer.domElement);

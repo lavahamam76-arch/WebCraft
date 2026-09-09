@@ -53,10 +53,32 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
   onDisconnect,
   onOptions,
 }) => {
+  const isRealExternal =
+    !server.isLocalRoom &&
+    !server.address.includes('lobby.minecraft.net') &&
+    server.address !== 'localhost' &&
+    server.address !== '127.0.0.1';
+
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<MinecraftRenderer | null>(null);
-  const worldRef = useRef<VoxelWorld>(new VoxelWorld());
+  // Empty world for external servers so NO fake terrain is generated!
+  const worldRef = useRef<VoxelWorld>(new VoxelWorld(isRealExternal));
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Real-Time Connection & Diagnostic State
+  const [isConnecting, setIsConnecting] = useState(isRealExternal);
+  const [connectingStage, setConnectingStage] = useState('Connecting to the server...');
+  const [connectionLogs, setConnectionLogs] = useState<string[]>(() => {
+    const time = new Date().toLocaleTimeString();
+    if (isRealExternal) {
+      return [
+        `[${time}] Minecraft 1.21.4 TCP Proxy istemcisi başlatılıyor...`,
+        `[${time}] Hedef Sunucu: ${server.name} (${server.address})`,
+      ];
+    }
+    return [];
+  });
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   // Player State
   const playerPosRef = useRef(new THREE.Vector3(0, 8, 0));
@@ -64,15 +86,19 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
   const playerRotRef = useRef({ pitch: 0, yaw: 0 });
   const isGroundedRef = useRef(false);
 
-  // UI States
+  // UI States - Start with empty inventory on real servers until synced
   const [selectedSlot, setSelectedSlot] = useState(0);
-  const [hotbar, setHotbar] = useState<Array<InventoryItem | null>>(DEFAULT_HOTBAR);
-  const [inventory, setInventory] = useState<Array<InventoryItem | null>>(DEFAULT_INVENTORY);
+  const [hotbar, setHotbar] = useState<Array<InventoryItem | null>>(() =>
+    isRealExternal ? Array(9).fill(null) : DEFAULT_HOTBAR
+  );
+  const [inventory, setInventory] = useState<Array<InventoryItem | null>>(() =>
+    isRealExternal ? Array(27).fill(null) : DEFAULT_INVENTORY
+  );
   const [health, setHealth] = useState(20);
-  const [armor] = useState(15);
-  const [hunger] = useState(20);
-  const [level] = useState(30);
-  const [expProgress] = useState(0.65);
+  const [armor, setArmor] = useState(15);
+  const [hunger, setHunger] = useState(20);
+  const [level, setLevel] = useState(30);
+  const [expProgress, setExpProgress] = useState(0.65);
 
   const [isPaused, setIsPaused] = useState(false);
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
@@ -81,25 +107,40 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
   const [showF3, setShowF3] = useState(false);
   const [fps, setFps] = useState(60);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      sender: 'Server',
-      text: `§aConnected to ${server.name}! §e(Minecraft 1.21.4 Vanilla)`,
-      system: true,
-      timestamp: Date.now(),
-    },
-    {
-      id: 'welcome-2',
-      sender: 'Server',
-      text: '§7Press §f[E] §7for inventory, §f[T] §7for chat, §f[F3] §7for debug.',
-      system: true,
-      timestamp: Date.now(),
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    if (isRealExternal) {
+      return [];
+    }
+    return [
+      {
+        id: 'welcome-1',
+        sender: 'Server',
+        text: `§aConnected to ${server.name}! §e(Minecraft 1.21.4 Vanilla)`,
+        system: true,
+        timestamp: Date.now(),
+      },
+      {
+        id: 'welcome-2',
+        sender: 'Server',
+        text: '§7Press §f[E] §7for inventory, §f[T] §7for chat, §f[F3] §7for debug.',
+        system: true,
+        timestamp: Date.now(),
+      },
+    ];
+  });
 
   const [remotePlayers, setRemotePlayers] = useState<RemotePlayerData[]>([]);
   const [targetedBlockName, setTargetedBlockName] = useState<string | null>(null);
+
+  // Holograms & Entities tracking from real 1.21.4 server
+  const hologramsRef = useRef<Map<string, { id: string; text: string; x: number; y: number; z: number }>>(new Map());
+  const entitiesRef = useRef<Map<string, any>>(new Map());
+  const hasLoadedRealChunkRef = useRef(false);
+
+  // Connection & Diagnostics State
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<{ message: string; note?: string } | null>(null);
+  const [isExternalServer, setIsExternalServer] = useState<boolean>(isRealExternal);
 
   // Keyboard keys tracking
   const keysRef = useRef<Record<string, boolean>>({});
@@ -237,7 +278,7 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
     [settings.username]
   );
 
-  // Setup WebSocket connection to server
+  // Setup WebSocket connection to server & 1.21.4 TCP Proxy
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -245,22 +286,266 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
+    let targetHost = (server.address || 'localhost').trim();
+    let targetPort = 25565;
+    if (targetHost.includes(':')) {
+      const parts = targetHost.split(':');
+      targetHost = parts[0];
+      targetPort = parseInt(parts[1], 10) || 25565;
+    }
+
+    const isLocal =
+      server.isLocalRoom ||
+      targetHost.includes('lobby.minecraft.net') ||
+      targetHost === 'localhost' ||
+      targetHost === '127.0.0.1';
+
+    setIsExternalServer(!isLocal);
+
     ws.onopen = () => {
-      ws.send(
-        JSON.stringify({
-          type: 'join',
-          username: settings.username,
-          skin: settings.skin,
-          x: playerPosRef.current.x,
-          y: playerPosRef.current.y,
-          z: playerPosRef.current.z,
-        })
-      );
+      const time = new Date().toLocaleTimeString();
+      if (!isLocal) {
+        setConnectionStatus(`TCP bağlantısı kuruluyor: ${targetHost}:${targetPort}...`);
+        setConnectionLogs((prev) => [
+          ...prev,
+          `[${time}] WebSocket köprüsü açıldı.`,
+          `[${time}] [1/5] ${targetHost}:${targetPort} Minecraft 1.21.4 sunucusuna TCP soketi açılıyor...`,
+        ]);
+        ws.send(
+          JSON.stringify({
+            type: 'connect_external_server',
+            host: targetHost,
+            port: targetPort,
+            username: settings.username,
+            skin: settings.skin,
+          })
+        );
+      } else {
+        ws.send(
+          JSON.stringify({
+            type: 'join',
+            username: settings.username,
+            skin: settings.skin,
+            x: playerPosRef.current.x,
+            y: playerPosRef.current.y,
+            z: playerPosRef.current.z,
+          })
+        );
+      }
     };
 
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+        const time = new Date().toLocaleTimeString();
+
+        if (msg.type === 'status_log') {
+          setConnectionStatus(msg.message);
+          setConnectionLogs((prev) => [...prev, `[${time}] ${msg.message}`]);
+          if (msg.stage) {
+            if (msg.stage === 'connecting') setConnectingStage('Sunucu TCP soketi açılıyor...');
+            else if (msg.stage === 'handshake') setConnectingStage('Protokol 768 / 1.21.4 Handshake gönderildi...');
+            else if (msg.stage === 'compression') setConnectingStage('Paket sıkıştırması müzakeresi...');
+            else if (msg.stage === 'logging_in') setConnectingStage('Oturum açılıyor (Login Start)...');
+            else if (msg.stage === 'downloading_terrain') setConnectingStage('Dünya ve Chunk verileri bekleniyor...');
+            else if (msg.stage === 'terrain_ready') setConnectingStage('Arazi hazır, dünyaya giriliyor...');
+          }
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: 'status_' + Date.now() + Math.random(),
+              sender: 'Proxy',
+              text: msg.message,
+              system: true,
+              timestamp: Date.now(),
+            },
+          ]);
+        }
+
+        if (msg.type === 'server_connected') {
+          setConnectionStatus(null);
+          setServerError(null);
+          setConnectingStage('Oturum açıldı. Arazi verileri (Chunklar) bekleniyor...');
+          setConnectionLogs((prev) => [
+            ...prev,
+            `[${time}] §a✔ Minecraft 1.21.4 sunucu oturumu açıldı!`,
+            `[${time}] Entity ID: ${msg.entityId || 0}, Gamemode: ${msg.gameMode || 'survival'}`,
+            `[${time}] Dünya blok verileri (map_chunk) bekleniyor...`,
+          ]);
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: 'conn_' + Date.now(),
+              sender: 'Proxy',
+              text: `§a✔ Minecraft 1.21.4 sunucusuna başarıyla bağlandı! (${msg.host || server.name})`,
+              system: true,
+              timestamp: Date.now(),
+            },
+          ]);
+        }
+
+        if (msg.type === 'server_error') {
+          setConnectionStatus(null);
+          setServerError({
+            message: msg.message,
+            note: msg.note,
+          });
+          setConnectingStage('Bağlantı Başarısız!');
+          setConnectionLogs((prev) => [
+            ...prev,
+            `[${time}] §c[HATA] ${msg.message}`,
+            msg.note ? `[${time}] §e[NOT] ${msg.note}` : '',
+          ].filter(Boolean));
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: 'err_' + Date.now(),
+              sender: 'Hata',
+              text: `§c[Hata] ${msg.message}`,
+              system: true,
+              timestamp: Date.now(),
+            },
+          ]);
+        }
+
+        if (msg.type === 'server_disconnected') {
+          const reasonText = typeof msg.reason === 'string' ? msg.reason : JSON.stringify(msg.reason);
+          setServerError({
+            message: `Sunucu bağlantısı koptu: ${reasonText}`,
+            note: 'Sunucu oturumu kapattı veya yeniden başlatılıyor.',
+          });
+          setConnectingStage('Bağlantı Koptu!');
+          setConnectionLogs((prev) => [
+            ...prev,
+            `[${time}] §c[KOPTI] ${reasonText}`,
+          ]);
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: 'disc_' + Date.now(),
+              sender: 'Server',
+              text: `§cSunucu bağlantısı koptu: ${reasonText}`,
+              system: true,
+              timestamp: Date.now(),
+            },
+          ]);
+        }
+
+        if (msg.type === 'chunk_data') {
+          if (Array.isArray(msg.blocks) && msg.blocks.length > 0) {
+            const isFirst = !hasLoadedRealChunkRef.current;
+            hasLoadedRealChunkRef.current = true;
+            worldRef.current.loadChunkBlocks(msg.blocks, isFirst);
+            rendererRef.current?.buildWorldMesh(worldRef.current);
+
+            if (isConnecting) {
+              setIsConnecting(false);
+              soundManager.playPop();
+              setConnectionLogs((prev) => [
+                ...prev,
+                `[${time}] §a✔ İlk chunk alındı (${msg.blocks.length} blok). 3D voxel dünyası yüklendi!`,
+              ]);
+            }
+          }
+        }
+
+        if (msg.type === 'inventory_sync') {
+          if (Array.isArray(msg.hotbar) && msg.hotbar.length > 0) {
+            setHotbar(msg.hotbar);
+          }
+          if (Array.isArray(msg.inventory) && msg.inventory.length > 0) {
+            setInventory(msg.inventory);
+          }
+        }
+
+        if (msg.type === 'slot_updated') {
+          if (msg.slot >= 36 && msg.slot <= 44) {
+            setHotbar((prev) => {
+              const next = [...prev];
+              next[msg.slot - 36] = msg.item;
+              return next;
+            });
+          } else if (msg.slot >= 9 && msg.slot <= 35) {
+            setInventory((prev) => {
+              const next = [...prev];
+              next[msg.slot - 9] = msg.item;
+              return next;
+            });
+          }
+        }
+
+        if (msg.type === 'player_teleport') {
+          playerPosRef.current.set(msg.x, msg.y, msg.z);
+          playerVelRef.current.set(0, 0, 0);
+          if (typeof msg.yaw === 'number') playerRotRef.current.yaw = msg.yaw;
+          if (typeof msg.pitch === 'number') playerRotRef.current.pitch = msg.pitch;
+        }
+
+        if (msg.type === 'health_update') {
+          if (typeof msg.health === 'number') setHealth(msg.health);
+          if (typeof msg.food === 'number') setHunger(msg.food);
+        }
+
+        if (msg.type === 'exp_update') {
+          if (typeof msg.level === 'number') setLevel(msg.level);
+          if (typeof msg.expProgress === 'number') setExpProgress(msg.expProgress);
+        }
+
+        if (msg.type === 'hologram_update') {
+          hologramsRef.current.set(msg.id, {
+            id: msg.id,
+            text: msg.text,
+            x: msg.x ?? playerPosRef.current.x,
+            y: msg.y ?? (playerPosRef.current.y + 1.2),
+            z: msg.z ?? playerPosRef.current.z,
+          });
+          rendererRef.current?.updateHolograms(Array.from(hologramsRef.current.values()));
+        }
+
+        if (msg.type === 'entity_spawn') {
+          entitiesRef.current.set(msg.id, {
+            id: msg.id,
+            type: msg.entityType || 'entity',
+            x: msg.x,
+            y: msg.y,
+            z: msg.z,
+            yaw: msg.yaw || 0,
+            pitch: msg.pitch || 0,
+          });
+          rendererRef.current?.updateEntities(Array.from(entitiesRef.current.values()));
+        }
+
+        if (msg.type === 'entity_move') {
+          const ent = entitiesRef.current.get(msg.id);
+          if (ent) {
+            ent.x = msg.x;
+            ent.y = msg.y;
+            ent.z = msg.z;
+            if (msg.yaw !== undefined) ent.yaw = msg.yaw;
+            if (msg.pitch !== undefined) ent.pitch = msg.pitch;
+            rendererRef.current?.updateEntities(Array.from(entitiesRef.current.values()));
+          }
+        }
+
+        if (msg.type === 'entity_rel_move') {
+          const ent = entitiesRef.current.get(msg.id);
+          if (ent) {
+            ent.x += msg.dx || 0;
+            ent.y += msg.dy || 0;
+            ent.z += msg.dz || 0;
+            rendererRef.current?.updateEntities(Array.from(entitiesRef.current.values()));
+          }
+        }
+
+        if (msg.type === 'entity_destroy') {
+          const ids = Array.isArray(msg.entityIds) ? msg.entityIds : [msg.id];
+          for (const id of ids) {
+            entitiesRef.current.delete(id);
+            hologramsRef.current.delete(id);
+          }
+          rendererRef.current?.updateEntities(Array.from(entitiesRef.current.values()));
+          rendererRef.current?.updateHolograms(Array.from(hologramsRef.current.values()));
+        }
 
         if (msg.type === 'init') {
           // Sync existing remote players
@@ -371,7 +656,7 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
     return () => {
       ws.close();
     };
-  }, [settings.username, settings.skin]);
+  }, [server.address, server.isLocalRoom, server.name, settings.username, settings.skin, syncInventoryToServer, inventory]);
 
   // Initialize Three.js Renderer & Voxel World
   useEffect(() => {
@@ -968,48 +1253,107 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
     setShowF3((prev) => !prev);
   }, []);
 
+  const handleRetryConnection = useCallback(() => {
+    soundManager.playClick();
+    setServerError(null);
+    setIsConnecting(true);
+    setConnectingStage('Sunucuya yeniden bağlanılıyor...');
+    const time = new Date().toLocaleTimeString();
+    setConnectionLogs((prev) => [
+      ...prev,
+      `[${time}] [Yeniden Dene] TCP Proxy soketi açılıyor...`,
+    ]);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      let targetHost = (server.address || 'localhost').trim();
+      let targetPort = 25565;
+      if (targetHost.includes(':')) {
+        const parts = targetHost.split(':');
+        targetHost = parts[0];
+        targetPort = parseInt(parts[1], 10) || 25565;
+      }
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'connect_external_server',
+          host: targetHost,
+          port: targetPort,
+          username: settings.username,
+          skin: settings.skin,
+        })
+      );
+    }
+  }, [server.address, settings.username, settings.skin]);
+
+  const handleStartLocalRoom = useCallback(() => {
+    soundManager.playClick();
+    setServerError(null);
+    setIsConnecting(false);
+    setIsExternalServer(false);
+    worldRef.current = new VoxelWorld(false);
+    rendererRef.current?.buildWorldMesh(worldRef.current);
+    setHotbar(DEFAULT_HOTBAR);
+    setInventory(DEFAULT_INVENTORY);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'join',
+          username: settings.username,
+          skin: settings.skin,
+          x: 0,
+          y: 8,
+          z: 0,
+        })
+      );
+    }
+  }, [settings.username, settings.skin]);
+
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollTop = logEndRef.current.scrollHeight;
+    }
+  }, [connectionLogs]);
+
   return (
     <div className="relative w-full h-screen overflow-hidden select-none bg-black">
-      {/* Landscape Orientation Enforcement on Mobile */}
-      <LandscapeNotice />
-
       {/* 3D WebGL Canvas Container */}
       <div ref={mountRef} className="w-full h-full cursor-crosshair" />
 
       {/* In-Game Heads-Up Display (HUD) */}
-      <GameHUD
-        hotbar={hotbar}
-        selectedSlot={selectedSlot}
-        onSelectSlot={setSelectedSlot}
-        health={health}
-        armor={armor}
-        hunger={hunger}
-        level={level}
-        expProgress={expProgress}
-        chatMessages={chatMessages}
-        onSendChat={handleSendChat}
-        isChatOpen={isChatOpen}
-        setIsChatOpen={setIsChatOpen}
-        showF3={showF3}
-        playerPos={{
-          x: playerPosRef.current.x,
-          y: playerPosRef.current.y,
-          z: playerPosRef.current.z,
-        }}
-        playerRot={{
-          pitch: playerRotRef.current.pitch,
-          yaw: playerRotRef.current.yaw,
-        }}
-        targetedBlock={targetedBlockName}
-        targetedBlockInfo={targetedBlockInfo}
-        remotePlayers={remotePlayers}
-        isTabOpen={isTabOpen}
-        fps={fps}
-        isMobile={isMobile}
-      />
+      {!isConnecting && (
+        <GameHUD
+          hotbar={hotbar}
+          selectedSlot={selectedSlot}
+          onSelectSlot={setSelectedSlot}
+          health={health}
+          armor={armor}
+          hunger={hunger}
+          level={level}
+          expProgress={expProgress}
+          chatMessages={chatMessages}
+          onSendChat={handleSendChat}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          showF3={showF3}
+          playerPos={{
+            x: playerPosRef.current.x,
+            y: playerPosRef.current.y,
+            z: playerPosRef.current.z,
+          }}
+          playerRot={{
+            pitch: playerRotRef.current.pitch,
+            yaw: playerRotRef.current.yaw,
+          }}
+          targetedBlock={targetedBlockName}
+          targetedBlockInfo={targetedBlockInfo}
+          remotePlayers={remotePlayers}
+          isTabOpen={isTabOpen}
+          fps={fps}
+          isMobile={isMobile}
+        />
+      )}
 
-      {/* Mobile Controls (Rendered ONLY when isMobile is detected, hidden on desktop) */}
-      {isMobile && !isPaused && !isInventoryOpen && !isChatOpen && (
+      {/* Mobile Controls (Rendered ONLY when isMobile is detected and world is loaded) */}
+      {isMobile && !isConnecting && !isPaused && !isInventoryOpen && !isChatOpen && (
         <MobileControls
           onDirectionChange={handleDirectionChange}
           onJump={handleMobileJump}
@@ -1028,7 +1372,7 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
       )}
 
       {/* Inventory Modal ('E' key or Backpack button) */}
-      {isInventoryOpen && (
+      {isInventoryOpen && !isConnecting && (
         <InventoryModal
           hotbar={hotbar}
           inventory={inventory}
@@ -1043,13 +1387,129 @@ export const MinecraftGame: React.FC<MinecraftGameProps> = ({
       )}
 
       {/* Pause Game Menu ('Esc' key or Pause button) */}
-      {isPaused && (
+      {isPaused && !isConnecting && (
         <PauseMenu
           onResume={() => setIsPaused(false)}
           onOptions={onOptions}
           onDisconnect={onDisconnect}
           serverName={server.name}
         />
+      )}
+
+      {/* Full-Screen Connecting / Real-Time Background Terminal Log Screen */}
+      {isConnecting && (
+        <div className="fixed inset-0 z-50 mc-dirt-bg overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4 select-none font-minecraft">
+          {/* Dark backdrop overlay */}
+          <div className="absolute inset-0 bg-black/65 pointer-events-none" />
+
+          <div className="relative z-10 max-w-xl w-full flex flex-col items-center text-center my-auto py-2">
+            <h1 className="text-base sm:text-xl font-bold text-white mc-text-shadow mb-0.5">
+              {server.name}
+            </h1>
+            <p className="text-[10px] sm:text-xs text-gray-400 mc-text-shadow mb-2 sm:mb-3">
+              {server.address} • Minecraft Java Edition 1.21.4 (Protocol 768)
+            </p>
+
+            {/* Connecting Stage Indicator */}
+            <div className="mb-2 sm:mb-3">
+              <div className="text-xs sm:text-sm md:text-base font-bold text-yellow-300 mc-text-shadow animate-pulse">
+                {connectingStage}
+              </div>
+              {!serverError && (
+                <div className="w-48 sm:w-56 h-1.5 bg-gray-800 rounded-full mx-auto mt-1.5 overflow-hidden border border-gray-700">
+                  <div className="h-full bg-green-500 animate-[progress_1.2s_ease-in-out_infinite]" />
+                </div>
+              )}
+            </div>
+
+            {/* Real-Time Background Activity Log Terminal */}
+            <div className="w-full bg-[#111111]/95 border border-[#333333] rounded p-2 sm:p-3 mb-2 sm:mb-3 text-left shadow-2xl">
+              <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400 border-b border-[#222222] pb-1 mb-1.5">
+                <span className="flex items-center gap-1.5 font-bold text-gray-200">
+                  <span className={`w-2 h-2 rounded-full ${serverError ? 'bg-red-500' : 'bg-emerald-400 animate-ping'}`} />
+                  Arka Plan Gerçek Protokol Günlüğü
+                </span>
+                <span className="text-[9px] sm:text-[10px] text-gray-500">Canlı TCP Proxy Akışı</span>
+              </div>
+              <div
+                ref={logEndRef}
+                className="h-24 sm:h-32 md:h-40 overflow-y-auto font-mono text-[10px] sm:text-[11px] leading-relaxed space-y-0.5 select-text scrollbar-thin scrollbar-thumb-gray-600"
+              >
+                {connectionLogs.map((log, index) => {
+                  const isError = log.includes('[HATA]') || log.includes('§c') || log.includes('[KOPTI]');
+                  const isSuccess = log.includes('§a') || log.includes('✔') || log.includes('başarıyla');
+                  const isWarning = log.includes('§e') || log.includes('[NOT]');
+                  const cleanText = log.replace(/§[0-9a-fk-or]/g, '');
+
+                  return (
+                    <div
+                      key={index}
+                      className={`break-words ${
+                        isError
+                          ? 'text-red-400 font-semibold'
+                          : isSuccess
+                          ? 'text-emerald-300'
+                          : isWarning
+                          ? 'text-yellow-300'
+                          : 'text-gray-300'
+                      }`}
+                    >
+                      {cleanText}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Error diagnostic explanation if failed */}
+            {serverError && (
+              <div className="w-full bg-red-950/85 border border-red-500/80 p-2 sm:p-3 rounded mb-2 sm:mb-3 text-left text-[11px] sm:text-xs text-red-200 shadow-lg">
+                <p className="font-bold text-red-300 mb-1">Sunucuya Bağlanılamadı:</p>
+                <p className="mb-1.5 font-mono text-[10px] sm:text-[11px] bg-black/40 p-1.5 rounded text-red-200">{serverError.message}</p>
+                {serverError.note && (
+                  <div className="bg-black/40 p-1.5 rounded text-[10px] sm:text-[11px] text-yellow-200/90 leading-relaxed">
+                    <strong className="text-yellow-300">Neden & Çözüm: </strong>
+                    {serverError.note}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  onDisconnect();
+                }}
+                className="mc-btn px-4 py-1.5 sm:px-6 sm:py-2 text-[11px] sm:text-xs text-white"
+              >
+                {serverError ? 'Sunucu Listesine Dön' : 'İptal'}
+              </button>
+
+              {serverError && (
+                <button
+                  type="button"
+                  onClick={handleRetryConnection}
+                  className="mc-btn px-4 py-1.5 sm:px-6 sm:py-2 text-[11px] sm:text-xs text-yellow-300"
+                >
+                  Yeniden Dene
+                </button>
+              )}
+
+              {serverError && (
+                <button
+                  type="button"
+                  onClick={handleStartLocalRoom}
+                  className="mc-btn px-4 py-1.5 sm:px-6 sm:py-2 text-[11px] sm:text-xs text-green-300"
+                >
+                  Yerel Test Dünyasında Başlat
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

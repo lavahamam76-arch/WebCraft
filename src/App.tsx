@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { RotateCw } from 'lucide-react';
 import { ScreenType, ServerEntry, GameSettings } from './types/minecraft';
 import { TitleScreen } from './components/TitleScreen';
 import { MultiplayerMenu } from './components/MultiplayerMenu';
 import {
   AddEditServerModal,
   DirectConnectModal,
-  ConnectingScreen,
 } from './components/ServerDialogs';
 import { OptionsModal } from './components/OptionsModal';
 import { MinecraftGame } from './components/MinecraftGame';
+import { LandscapeNotice } from './components/LandscapeNotice';
 import { soundManager } from './minecraft/audio';
 
 const STORAGE_SERVERS_KEY = 'minecraft_web_servers_1_21_4';
@@ -71,8 +72,30 @@ export default function App() {
 
   const [selectedServer, setSelectedServer] = useState<ServerEntry | null>(null);
   const [editingServer, setEditingServer] = useState<ServerEntry | null>(null);
-  const [connectingStage, setConnectingStage] = useState('Connecting to the server...');
   const [prevScreen, setPrevScreen] = useState<ScreenType>('title');
+
+  // Direct Orientation & Virtual Landscape Control
+  const [isVirtualLandscape, setIsVirtualLandscape] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerHeight > window.innerWidth;
+  });
+
+  useEffect(() => {
+    const handleOrientation = () => {
+      const portrait = window.innerHeight > window.innerWidth;
+      setIsPortrait(portrait);
+      if (!portrait) {
+        setIsVirtualLandscape(false);
+      }
+    };
+    window.addEventListener('resize', handleOrientation);
+    window.addEventListener('orientationchange', handleOrientation);
+    return () => {
+      window.removeEventListener('resize', handleOrientation);
+      window.removeEventListener('orientationchange', handleOrientation);
+    };
+  }, []);
 
   // Persist servers
   useEffect(() => {
@@ -92,31 +115,13 @@ export default function App() {
     }
   }, [settings]);
 
-  // Connect to Server flow
+  // Connect to Server flow:
+  // Transfer directly to MinecraftGame where the authentic TCP proxy connection
+  // and real background diagnostics screen live!
   const handleJoinServer = (server: ServerEntry) => {
+    soundManager.playClick();
     setSelectedServer(server);
-    setScreen('connecting');
-    setConnectingStage('Connecting to the server...');
-
-    // Authentic login stage sequence
-    const t1 = setTimeout(() => {
-      setConnectingStage('Logging in (Protocol 768 / 1.21.4)...');
-    }, 600);
-
-    const t2 = setTimeout(() => {
-      setConnectingStage('Loading terrain...');
-    }, 1200);
-
-    const t3 = setTimeout(() => {
-      soundManager.playPop();
-      setScreen('ingame');
-    }, 1800);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
+    setScreen('ingame');
   };
 
   // Direct connection
@@ -150,8 +155,46 @@ export default function App() {
     }
   };
 
+  // Virtual Landscape CSS transform when upright phone
+  const containerStyle: React.CSSProperties =
+    isVirtualLandscape && isPortrait
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vh',
+          height: '100vw',
+          transform: 'rotate(90deg) translateY(-100%)',
+          transformOrigin: 'top left',
+          overflow: 'hidden',
+          zIndex: 40,
+        }
+      : {};
+
   return (
-    <div className="w-full h-screen overflow-hidden bg-black select-none">
+    <div
+      id="minecraft-app-root"
+      style={containerStyle}
+      className="w-full h-screen overflow-hidden bg-black select-none relative"
+    >
+      {/* Landscape Guidance Modal with Direct Rotate button */}
+      <LandscapeNotice
+        isVirtualLandscape={isVirtualLandscape}
+        onToggleVirtualLandscape={() => setIsVirtualLandscape(true)}
+      />
+
+      {/* Floating Orientation Toggle (Only on upright phones) */}
+      {isPortrait && (
+        <button
+          type="button"
+          onClick={() => setIsVirtualLandscape((prev) => !prev)}
+          className="fixed top-2 right-2 z-50 bg-black/85 hover:bg-black text-yellow-400 border border-yellow-500/60 px-3 py-1.5 rounded text-[11px] font-minecraft flex items-center gap-1.5 shadow-xl active:scale-95 transition-all backdrop-blur-xs"
+        >
+          <RotateCw size={13} />
+          {isVirtualLandscape ? 'Dikey Mod' : 'Yatay Mod'}
+        </button>
+      )}
+
       {/* 1. Title Screen */}
       {screen === 'title' && (
         <TitleScreen
@@ -216,19 +259,7 @@ export default function App() {
         />
       )}
 
-      {/* 6. Connecting / Loading Screen */}
-      {screen === 'connecting' && selectedServer && (
-        <ConnectingScreen
-          serverName={selectedServer.name}
-          stage={connectingStage}
-          onCancel={() => {
-            setScreen('multiplayer');
-            setSelectedServer(null);
-          }}
-        />
-      )}
-
-      {/* 7. Options Modal */}
+      {/* 6. Options Modal */}
       {screen === 'options' && (
         <OptionsModal
           settings={settings}
@@ -237,7 +268,7 @@ export default function App() {
         />
       )}
 
-      {/* 8. Active In-Game Screen */}
+      {/* 7. Active In-Game Screen */}
       {screen === 'ingame' && selectedServer && (
         <MinecraftGame
           server={selectedServer}

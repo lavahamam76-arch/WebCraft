@@ -228,8 +228,10 @@ export class VoxelWorld {
   public readonly worldMinY = 0;
   public readonly worldMaxY = 64;
 
-  constructor() {
-    this.generateDefaultTerrain();
+  constructor(empty = false) {
+    if (!empty) {
+      this.generateDefaultTerrain();
+    }
   }
 
   private key(x: number, y: number, z: number): string {
@@ -248,6 +250,57 @@ export class VoxelWorld {
     } else {
       this.blocks.set(k, type);
     }
+  }
+
+  // Load real server chunk blocks (streamed from 1.21.4 TCP proxy or world generator)
+  public loadChunkBlocks(
+    blocksList: Array<{ x: number; y: number; z: number; block: string }>,
+    clearExisting = false
+  ) {
+    if (clearExisting) {
+      this.blocks.clear();
+    }
+    for (const b of blocksList) {
+      const norm = this.normalizeBlockType(b.block);
+      this.setBlock(b.x, b.y, b.z, norm);
+    }
+  }
+
+  // Map any Minecraft 1.21.4 block name to our available texture set
+  public normalizeBlockType(name: string): BlockId {
+    if (!name || name === 'air' || name === 'cave_air' || name === 'void_air') return 'air';
+    const n = name.toLowerCase().replace('minecraft:', '');
+
+    // Direct match
+    const valid: BlockId[] = [
+      'dirt', 'grass_block', 'stone', 'cobblestone', 'oak_planks', 'oak_log',
+      'oak_leaves', 'diamond_ore', 'gold_ore', 'iron_ore', 'coal_ore',
+      'bedrock', 'sand', 'water', 'glass', 'crafting_table', 'furnace',
+      'tnt', 'obsidian', 'glowstone', 'bricks'
+    ];
+    if (valid.includes(n as BlockId)) return n as BlockId;
+
+    // Semantic fallbacks for other 1.21.4 blocks
+    if (n.includes('grass')) return 'grass_block';
+    if (n.includes('dirt') || n.includes('mud') || n.includes('podzol') || n.includes('mycelium')) return 'dirt';
+    if (n.includes('sand') || n.includes('gravel') || n.includes('concrete_powder')) return 'sand';
+    if (n.includes('diamond')) return 'diamond_ore';
+    if (n.includes('gold') || n.includes('copper')) return 'gold_ore';
+    if (n.includes('iron')) return 'iron_ore';
+    if (n.includes('coal')) return 'coal_ore';
+    if (n.includes('log') || n.includes('wood') || n.includes('stem')) return 'oak_log';
+    if (n.includes('leaves')) return 'oak_leaves';
+    if (n.includes('plank') || n.includes('slab') || n.includes('stair') || n.includes('door') || n.includes('fence')) return 'oak_planks';
+    if (n.includes('glass') || n.includes('pane')) return 'glass';
+    if (n.includes('water') || n.includes('ice')) return 'water';
+    if (n.includes('brick')) return 'bricks';
+    if (n.includes('obsidian') || n.includes('crying_obsidian') || n.includes('netherite')) return 'obsidian';
+    if (n.includes('glowstone') || n.includes('sea_lantern') || n.includes('shroomlight') || n.includes('lantern') || n.includes('torch')) return 'glowstone';
+    if (n.includes('bedrock')) return 'bedrock';
+    if (n.includes('deepslate') || n.includes('cobble') || n.includes('andesite') || n.includes('granite') || n.includes('diorite') || n.includes('tuff')) return 'cobblestone';
+    if (n.includes('stone') || n.includes('calcite') || n.includes('dripstone')) return 'stone';
+
+    return 'stone';
   }
 
   public getAllBlocks(): Array<{ x: number; y: number; z: number; type: BlockId }> {

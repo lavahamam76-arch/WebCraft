@@ -280,11 +280,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       )}
 
       {/* Chat History & Chat Input Box */}
-      <div className={`p-3 max-w-xl flex flex-col justify-end pointer-events-auto ${isMobile ? 'pb-16' : ''}`}>
+      <div className={`p-2 sm:p-3 max-w-lg md:max-w-xl flex flex-col justify-end pointer-events-auto ${isMobile ? 'pb-14' : ''}`}>
         {/* Messages */}
         <div
           ref={chatScrollRef}
-          className="flex flex-col gap-1 max-h-48 overflow-y-auto mb-2 text-xs leading-relaxed"
+          className="flex flex-col gap-1 max-h-32 sm:max-h-44 overflow-y-auto mb-1.5 text-xs leading-relaxed"
         >
           {chatMessages.slice(-12).map((msg) => {
             const formatted = parseLegacyFormatting(msg.text);
@@ -317,51 +317,51 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
         {/* Quick Command Chips & Chat Input Form */}
         {isChatOpen && (
-          <div className="flex flex-col gap-1.5 bg-black/80 p-2 border border-gray-600 rounded shadow-2xl z-50">
+          <div className="flex flex-col gap-1.5 bg-black/85 p-2 border border-gray-600 rounded shadow-2xl z-50 max-w-md">
             {/* Quick Command Chips */}
-            <div className="flex flex-wrap items-center gap-1 text-[10px]">
+            <div className="flex flex-wrap items-center gap-1 text-[9px] sm:text-[10px] max-h-16 overflow-y-auto">
               <span className="text-yellow-400 font-bold flex items-center gap-1 mr-1">
-                <Terminal size={12} /> Hızlı Komutlar:
+                <Terminal size={11} /> Hızlı Komutlar:
               </span>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/help')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-yellow-200 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-yellow-200 rounded border border-gray-500"
               >
                 /help
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/gamemode c')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-green-300 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-green-300 rounded border border-gray-500"
               >
                 /gamemode c
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/gamemode s')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-green-300 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-green-300 rounded border border-gray-500"
               >
                 /gamemode s
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/give diamond 64')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-cyan-300 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-cyan-300 rounded border border-gray-500"
               >
                 /give diamond 64
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/give tnt 64')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-red-300 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-red-300 rounded border border-gray-500"
               >
                 /give tnt 64
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickCommand('/time set day')}
-                className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-amber-200 rounded border border-gray-500"
+                className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-amber-200 rounded border border-gray-500"
               >
                 /time set day
               </button>
@@ -375,18 +375,18 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Komut veya mesaj yazın... (Örn: /help, Merhaba)"
-                className="mc-input flex-1 text-xs py-1.5 px-2 bg-black/90 border-gray-400 focus:border-yellow-400 pointer-events-auto"
+                className="mc-input flex-1 text-xs py-1 px-2 bg-black/90 border-gray-400 focus:border-yellow-400 pointer-events-auto"
               />
               <button
                 type="submit"
-                className="mc-btn py-1 px-3 text-xs text-yellow-300 pointer-events-auto font-bold"
+                className="mc-btn py-1 px-2.5 text-xs text-yellow-300 pointer-events-auto font-bold"
               >
                 Gönder
               </button>
               <button
                 type="button"
                 onClick={() => setIsChatOpen(false)}
-                className="mc-btn py-1 px-2.5 text-xs text-gray-400 hover:text-white pointer-events-auto"
+                className="mc-btn py-1 px-2 text-xs text-gray-400 hover:text-white pointer-events-auto"
               >
                 Kapat
               </button>
@@ -396,7 +396,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       </div>
 
       {/* Bottom HUD: Hearts, Armor, Hunger, Exp bar, 9-Slot Hotbar */}
-      <div className={`flex flex-col items-center pb-2 pointer-events-auto ${isMobile ? 'scale-90 origin-bottom' : ''}`}>
+      <div className={`flex flex-col items-center pb-1 sm:pb-2 pointer-events-auto ${isMobile ? 'scale-75 sm:scale-85 md:scale-95 origin-bottom' : ''}`}>
         {/* Vitals: Armor, Health (Left), Hunger (Right) */}
         <div className="w-[396px] max-w-full flex justify-between items-end mb-1 px-1">
           {/* Left Side: Armor and Health */}

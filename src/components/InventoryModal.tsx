@@ -314,19 +314,19 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center select-none p-2"
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center select-none p-1 sm:p-2 overflow-y-auto"
       onClick={() => {
         // Return cursor item to first empty slot if clicked outside
       }}
     >
       {/* Minecraft Java Inventory GUI Container */}
       <div
-        className="mc-stone-bg border-4 border-gray-700 p-3 rounded shadow-2xl flex flex-col gap-2 relative max-h-[96vh] overflow-y-auto max-w-[98vw]"
+        className="mc-stone-bg border-4 border-gray-700 p-2 sm:p-3 rounded shadow-2xl flex flex-col gap-1.5 sm:gap-2 relative max-h-[98dvh] overflow-y-auto max-w-[98vw] my-auto scale-[0.80] sm:scale-90 md:scale-100 origin-center"
         style={{ width: '470px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title Bar with Touch Split Mode Toggle */}
-        <div className="flex justify-between items-center text-xs font-bold text-gray-300 mc-text-shadow border-b border-gray-600 pb-1.5">
+        <div className="flex justify-between items-center text-xs font-bold text-gray-300 mc-text-shadow border-b border-gray-600 pb-1">
           <div className="flex items-center gap-2">
             <span>Crafting & Inventory</span>
             {/* Split Mode Toggle Button (Essential for Touch / Mobile) */}
@@ -356,34 +356,34 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         </div>
 
         {/* Top Section: Player 2D Preview & 2x2 Crafting Grid */}
-        <div className="flex justify-between items-center bg-black/30 p-2 border-2 border-gray-700 rounded">
+        <div className="flex justify-between items-center bg-black/30 p-1.5 sm:p-2 border-2 border-gray-700 rounded">
           {/* Armor Slots & Player Model */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* 4 Armor Slots */}
             <div className="flex flex-col gap-1">
               {['helmet', 'chestplate', 'leggings', 'boots'].map((type, idx) => (
-                <div key={idx} className="mc-slot w-9 h-9 border border-gray-700 opacity-80">
+                <div key={idx} className="mc-slot w-8 h-8 sm:w-9 sm:h-9 border border-gray-700 opacity-80">
                   <span className="text-[8px] text-gray-500 uppercase">{type[0]}</span>
                 </div>
               ))}
             </div>
 
             {/* Player Preview Box */}
-            <div className="w-20 h-36 bg-black/60 border-2 border-gray-800 flex flex-col items-center justify-center p-1">
+            <div className="w-16 h-28 sm:w-20 sm:h-36 bg-black/60 border-2 border-gray-800 flex flex-col items-center justify-center p-1">
               <div
-                className="w-10 h-10 rounded-sm border border-black mb-1"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-sm border border-black mb-1"
                 style={{ backgroundColor: skin === 'alex' ? '#e6b89c' : '#bfa088' }}
               />
               <div
-                className="w-12 h-14 rounded-sm border border-black"
+                className="w-10 h-11 sm:w-12 sm:h-14 rounded-sm border border-black"
                 style={{ backgroundColor: skin === 'alex' ? '#5a7d45' : '#2e6b7d' }}
               />
-              <span className="text-[9px] text-gray-400 mt-1">{skin === 'alex' ? 'Alex' : 'Steve'}</span>
+              <span className="text-[8px] sm:text-[9px] text-gray-400 mt-0.5">{skin === 'alex' ? 'Alex' : 'Steve'}</span>
             </div>
           </div>
 
           {/* 2x2 Crafting Grid & Output */}
-          <div className="flex items-center gap-3 pr-4">
+          <div className="flex items-center gap-2 sm:gap-3 pr-2 sm:pr-4">
             <div className="grid grid-cols-2 gap-1">
               {craftGrid.map((item, idx) => {
                 const icon = getItemIconUrl(item);
@@ -391,18 +391,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   <div
                     key={idx}
                     onClick={() => handleCraftSlotClick(idx)}
-                    className="mc-slot w-10 h-10 cursor-pointer"
+                    className="mc-slot w-9 h-9 sm:w-10 sm:h-10 cursor-pointer"
                   >
                     {icon && (
                       <img
                         src={icon}
                         alt=""
-                        className="w-7 h-7 object-contain pointer-events-none"
+                        className="w-6 h-6 sm:w-7 sm:h-7 object-contain pointer-events-none"
                         style={{ imageRendering: 'pixelated' }}
                       />
                     )}
                     {item && item.count > 1 && (
-                      <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
+                      <span className="absolute bottom-0.5 right-1 text-[8px] sm:text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
                         {item.count}
                       </span>
                     )}
@@ -413,13 +413,13 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
             {/* Craft Arrow */}
             <div className="text-gray-400">
-              <ArrowRight size={20} />
+              <ArrowRight size={18} />
             </div>
 
             {/* Result Slot */}
             <div
               onClick={handleTakeResult}
-              className={`mc-slot w-12 h-12 border-2 ${
+              className={`mc-slot w-11 h-11 sm:w-12 sm:h-12 border-2 ${
                 craftResult ? 'border-yellow-400 bg-white/10 cursor-pointer' : 'border-gray-600'
               }`}
             >
@@ -428,11 +428,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   <img
                     src={getItemIconUrl(craftResult)!}
                     alt=""
-                    className="w-9 h-9 object-contain pointer-events-none"
+                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain pointer-events-none"
                     style={{ imageRendering: 'pixelated' }}
                   />
                   {craftResult.count > 1 && (
-                    <span className="absolute bottom-0.5 right-1 text-[11px] font-bold text-yellow-300 mc-text-shadow pointer-events-none">
+                    <span className="absolute bottom-0.5 right-1 text-[10px] sm:text-[11px] font-bold text-yellow-300 mc-text-shadow pointer-events-none">
                       {craftResult.count}
                     </span>
                   )}
@@ -443,8 +443,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         </div>
 
         {/* Middle Section: 27 Inventory Slots (3 rows of 9) */}
-        <div className="flex flex-col gap-1 mt-1">
-          <span className="text-[10px] text-gray-400 mc-text-shadow">Inventory</span>
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          <span className="text-[9px] sm:text-[10px] text-gray-400 mc-text-shadow">Inventory</span>
           <div className="grid grid-cols-9 gap-1 bg-black/20 p-1 border border-gray-700">
             {inventory.map((item, idx) => {
               const icon = getItemIconUrl(item);
@@ -453,18 +453,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   key={idx}
                   id={`mc-inv-slot-${idx}`}
                   onClick={() => handleSlotClick(false, idx)}
-                  className="mc-slot w-10 h-10 cursor-pointer"
+                  className="mc-slot w-9 h-9 sm:w-10 sm:h-10 cursor-pointer"
                 >
                   {icon && (
                     <img
                       src={icon}
                       alt=""
-                      className="w-7 h-7 object-contain pointer-events-none"
+                      className="w-6 h-6 sm:w-7 sm:h-7 object-contain pointer-events-none"
                       style={{ imageRendering: 'pixelated' }}
                     />
                   )}
                   {item && item.count > 1 && (
-                    <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
+                    <span className="absolute bottom-0.5 right-1 text-[8px] sm:text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
                       {item.count}
                     </span>
                   )}
@@ -475,8 +475,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         </div>
 
         {/* Bottom Section: 9 Hotbar Slots */}
-        <div className="flex flex-col gap-1 mt-1">
-          <span className="text-[10px] text-gray-400 mc-text-shadow">Hotbar</span>
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          <span className="text-[9px] sm:text-[10px] text-gray-400 mc-text-shadow">Hotbar</span>
           <div className="grid grid-cols-9 gap-1 bg-black/20 p-1 border border-gray-700">
             {hotbar.map((item, idx) => {
               const icon = getItemIconUrl(item);
@@ -485,18 +485,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   key={idx}
                   id={`mc-inv-hotbar-${idx}`}
                   onClick={() => handleSlotClick(true, idx)}
-                  className="mc-slot w-10 h-10 cursor-pointer"
+                  className="mc-slot w-9 h-9 sm:w-10 sm:h-10 cursor-pointer"
                 >
                   {icon && (
                     <img
                       src={icon}
                       alt=""
-                      className="w-7 h-7 object-contain pointer-events-none"
+                      className="w-6 h-6 sm:w-7 sm:h-7 object-contain pointer-events-none"
                       style={{ imageRendering: 'pixelated' }}
                     />
                   )}
                   {item && item.count > 1 && (
-                    <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
+                    <span className="absolute bottom-0.5 right-1 text-[8px] sm:text-[9px] font-bold text-white mc-text-shadow pointer-events-none">
                       {item.count}
                     </span>
                   )}
@@ -508,7 +508,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
         {/* Cursor Floating Item */}
         {cursorItem && (
-          <div className="text-center text-[10px] text-yellow-300 mc-text-shadow mt-1">
+          <div className="text-center text-[10px] text-yellow-300 mc-text-shadow mt-0.5">
             Holding: {cursorItem.name} ({cursorItem.count}) - Click slot to place
           </div>
         )}
