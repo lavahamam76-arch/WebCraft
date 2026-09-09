@@ -1,0 +1,6 @@
+{
+  "name": "Minecraft Web Client 1.21.4",
+  "description": "Vanilla Minecraft 1.21.4 web client with authentic Java Edition UI, multiplayer server list, server pinging, 3D voxel world, inventory, chat, and mobs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
